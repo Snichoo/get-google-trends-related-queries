@@ -1,11 +1,7 @@
 services:
   - type: web
     name: google-trends-screenshot
-    runtime: python
-    buildCommand: pip install -r requirements.txt && playwright install chromium
-    startCommand: gunicorn app:app
+    runtime: docker
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.11"
-      - key: PLAYWRIGHT_BROWSERS_PATH
-        value: "/opt/render/.cache/ms-playwright"
+      - key: PORT
+        value: "5000"
