@@ -17,39 +17,48 @@ def take_screenshot():
             headless=True,
             args=[
                 '--no-sandbox',
-                '--disable-dev-shm-usage',  # Important for Docker/limited memory
+                '--disable-dev-shm-usage',
                 '--disable-gpu',
                 '--disable-extensions',
                 '--disable-background-networking',
                 '--disable-default-apps',
                 '--disable-sync',
                 '--disable-translate',
-                '--single-process',  # Reduces memory usage
+                '--single-process',
                 '--no-zygote',
             ]
         )
         context = browser.new_context(
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            viewport={'width': 1280, 'height': 720}  # Smaller viewport = less memory
+            viewport={'width': 1280, 'height': 720}
         )
         page = context.new_page()
         
         url = "https://trends.google.com/trends/explore?date=now%207-d&geo=AU&q=ai&hl=en-AU"
-        page.goto(url, timeout=30000)
         
-        # Wait then refresh to bypass error
+        # First load
+        page.goto(url, wait_until='networkidle', timeout=60000)
+        
+        # Refresh to bypass any initial errors
         time.sleep(2)
-        page.reload(timeout=30000)
+        page.reload(wait_until='networkidle', timeout=60000)
         
-        # Wait for content to load
+        # Wait for the trend graph to actually appear
+        try:
+            page.wait_for_selector('fe-line-chart', timeout=30000)
+        except:
+            pass  # Continue even if not found
+        
+        # Extra wait for charts to render
         time.sleep(5)
         
-        # Scroll down
+        # Scroll down to load more content
         for i in range(3):
             page.evaluate("window.scrollBy(0, 400)")
-            time.sleep(0.3)
+            time.sleep(0.5)
         
-        time.sleep(1)
+        # Final wait for any lazy-loaded content
+        time.sleep(3)
         
         # Take screenshot
         filepath = "/tmp/google_trends.png"
