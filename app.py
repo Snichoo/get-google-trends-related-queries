@@ -1,13 +1,46 @@
 from flask import Flask, send_file, jsonify
 from playwright.sync_api import sync_playwright
+from datetime import datetime, timedelta
 import time
 import os
 
 app = Flask(__name__)
 
+# ===========================================
+# EASY CONFIGURATION - CHANGE THESE VALUES
+# ===========================================
+KEYWORD = "ai"           # Search term
+COUNTRY = "AU"           # Country code (AU, US, GB, etc.)
+LANGUAGE = "en-AU"       # Language code (en-AU, en-US, en-GB, etc.)
+DAYS_RANGE = 4           # Number of days to look back
+TIMEZONE = "Australia/Sydney"  # Timezone (Australia/Sydney, Australia/Melbourne, etc.)
+# ===========================================
+
+
+def build_trends_url():
+    """Build Google Trends URL with dynamic date range."""
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=DAYS_RANGE - 1)
+    
+    date_range = f"{start_date.strftime('%Y-%m-%d')}%20{end_date.strftime('%Y-%m-%d')}"
+    
+    url = f"https://trends.google.com/trends/explore?date={date_range}&geo={COUNTRY}&q={KEYWORD}&hl={LANGUAGE}"
+    return url
+
+
 @app.route('/')
 def home():
-    return jsonify({"status": "running", "endpoint": "/screenshot"})
+    return jsonify({
+        "status": "running",
+        "endpoint": "/screenshot",
+        "config": {
+            "keyword": KEYWORD,
+            "country": COUNTRY,
+            "language": LANGUAGE,
+            "days_range": DAYS_RANGE
+        }
+    })
+
 
 @app.route('/screenshot')
 def take_screenshot():
@@ -34,7 +67,7 @@ def take_screenshot():
         )
         page = context.new_page()
         
-        url = "https://trends.google.com/trends/explore?date=now%207-d&geo=AU&q=ai&hl=en-AU"
+        url = build_trends_url()
         
         # First load
         page.goto(url, wait_until='networkidle', timeout=60000)
@@ -67,6 +100,7 @@ def take_screenshot():
         browser.close()
     
     return send_file(filepath, mimetype='image/png')
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
