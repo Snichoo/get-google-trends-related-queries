@@ -12,29 +12,44 @@ def home():
 @app.route('/screenshot')
 def take_screenshot():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        # Memory-optimized browser launch
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-dev-shm-usage',  # Important for Docker/limited memory
+                '--disable-gpu',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--single-process',  # Reduces memory usage
+                '--no-zygote',
+            ]
+        )
         context = browser.new_context(
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            viewport={'width': 1920, 'height': 1080}
+            viewport={'width': 1280, 'height': 720}  # Smaller viewport = less memory
         )
         page = context.new_page()
         
         url = "https://trends.google.com/trends/explore?date=now%207-d&geo=AU&q=ai&hl=en-AU"
-        page.goto(url)
+        page.goto(url, timeout=30000)
         
         # Wait then refresh to bypass error
-        time.sleep(3)
-        page.reload()
+        time.sleep(2)
+        page.reload(timeout=30000)
         
         # Wait for content to load
-        time.sleep(8)
+        time.sleep(5)
         
         # Scroll down
-        for i in range(5):
-            page.evaluate("window.scrollBy(0, 500)")
-            time.sleep(0.5)
+        for i in range(3):
+            page.evaluate("window.scrollBy(0, 400)")
+            time.sleep(0.3)
         
-        time.sleep(2)
+        time.sleep(1)
         
         # Take screenshot
         filepath = "/tmp/google_trends.png"
