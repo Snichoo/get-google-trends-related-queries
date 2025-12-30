@@ -122,11 +122,3 @@ threading.Thread(target=generate_screenshot, daemon=True).start()
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-```
-
-Update your `requirements.txt`:
-```
-flask
-gunicorn
-playwright
-apscheduler
